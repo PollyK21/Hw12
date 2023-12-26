@@ -4,32 +4,9 @@ from datetime import date, datetime
 
 class Field:
     def __init__(self, value):
-        # self.__value = None
+        self.__value = None
         self.value = value
 
-    def __str__(self):
-        return str(self.value)
-
-
-class Name(Field):
-    pass
-
-
-class Phone(Field):
-    @property
-    def value(self):
-        return self.__value
-
-    @value.setter
-    def value(self, value):
-        if (len(value) == 10 and value.isdigit()):
-            self.__value = value
-            return self.__value
-        else:
-            raise ValueError
-
-
-class Birthday(Field):
     @property
     def value(self):
         return self.__value
@@ -42,6 +19,24 @@ class Birthday(Field):
         else:
             raise ValueError
 
+    def __str__(self):
+        return str(self.value)
+
+
+class Name(Field):
+    def is_valid_date_format(self, value):
+        return True
+
+
+class Phone(Field):
+    def is_valid_date_format(self, value):
+        if (len(value) == 10 and value.isdigit()):
+            return True
+        else:
+            return False
+
+
+class Birthday(Field):
     def is_valid_date_format(self, value):
         try:
             datetime.strptime(value, '%d.%m.%Y')
@@ -125,8 +120,6 @@ class AddressBook(UserDict):
             page_number += 1
 
 
-
-
 # book = AddressBook()
 
 # # Створення запису для John
@@ -137,7 +130,7 @@ class AddressBook(UserDict):
 # except ValueError:
 #     print("помилка")
 # try:
-#     john_record.set_birthday("20.12.1997")
+#     john_record.set_birthday("20327")
 # except ValueError:
 #     print("помилка")
 
