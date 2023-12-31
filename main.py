@@ -1,10 +1,10 @@
 from collections import UserDict
 from datetime import date, datetime
+import pickle
 
 
 class Field:
     def __init__(self, value):
-        self.__value = None
         self.value = value
 
     @property
@@ -13,9 +13,9 @@ class Field:
 
     @value.setter
     def value(self, value):
-        if self.is_valid_date_format(value):
+        if self.is_valid_format(value):
             self.__value = value
-            return self.__value
+            # return self.__value
         else:
             raise ValueError
 
@@ -24,12 +24,12 @@ class Field:
 
 
 class Name(Field):
-    def is_valid_date_format(self, value):
+    def is_valid_format(self, value):
         return True
 
 
 class Phone(Field):
-    def is_valid_date_format(self, value):
+    def is_valid_format(self, value):
         if (len(value) == 10 and value.isdigit()):
             return True
         else:
@@ -37,7 +37,7 @@ class Phone(Field):
 
 
 class Birthday(Field):
-    def is_valid_date_format(self, value):
+    def is_valid_format(self, value):
         try:
             datetime.strptime(value, '%d.%m.%Y')
             return True
@@ -97,11 +97,33 @@ class Record:
 
 
 class AddressBook(UserDict):
+    def __init__(self, filename):
+        super().__init__()
+        self.filename = filename
+
     def add_record(self, record):
         self.data[record.name.value] = record
 
     def find(self, name):
         return self.data.get(name)
+
+    def search(self, query):
+        results = []
+        for name, record in self.data.items():
+            if query.lower() in name.lower():
+                results.append(str(record))
+                continue
+            # Пошук за номерами телефону
+            for phone in record.phones:
+                if query.lower() in phone.value.lower():
+                    results.append(str(record))
+                    break
+            # Пошук за днем народження
+            if record.birthday is not None:
+                birthday_str = str(record.birthday)
+                if query.lower() in birthday_str.lower():
+                    results.append(str(record))
+        return "\n".join(res for res in results)
 
     def delete(self, name):
         if name in self.data:
@@ -119,8 +141,17 @@ class AddressBook(UserDict):
             start += page_size
             page_number += 1
 
+    def save_to_disk(self):
+        with open(self.filename, "wb") as fh:
+            pickle.dump(self, fh)
 
-# book = AddressBook()
+    def read_from_file(self):
+        with open(self.filename, "rb") as fh:
+            decoded = pickle.load(fh)
+            return decoded
+
+
+# book = AddressBook("book1.bin")
 
 # # Створення запису для John
 # john_record = Record("John")
@@ -130,7 +161,7 @@ class AddressBook(UserDict):
 # except ValueError:
 #     print("помилка")
 # try:
-#     john_record.set_birthday("20327")
+#     john_record.set_birthday("20.3.1997")
 # except ValueError:
 #     print("помилка")
 
@@ -138,35 +169,50 @@ class AddressBook(UserDict):
 # # Додавання запису John до адресної книги
 # book.add_record(john_record)
 
-# # Створення та додавання нового запису для Jane
+# Створення та додавання нового запису для Jane
 # jane_record = Record("Jane")
 # jane_record.add_phone("9876543210")
 # book.add_record(jane_record)
 
+# john = book.search("1")
+# print(john)
 
-# # Знаходження та редагування телефону для John
+# print(book)
+
+# Знаходження та редагування телефону для John
 # john = book.find("John")
+# print(john)
 # john.edit_phone("1234567890", "1112223333")
 # days = john.days_to_birthday()
 # print(days)
 
-# print(john)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
+# print(john_record)  # Виведення: Contact name: John, phones: 1112223333; 5555555555
 
 
-# # Пошук конкретного телефону у записі John
-# found_phone = john.find_phone("5555555555")
-#   # Виведення: 5555555555
+# # # Пошук конкретного телефону у записі John
+# found_phone = john_record.find_phone("1234567890")
+# print(found_phone)
+# #   # Виведення: 5555555555
 
 
 # # Видалення запису Jane
 # book.delete("Jane")
 
-# # проверить как работает итератор 
 
 # for page in book.iterator(3):
 #     print(page)
 
 
-# # Виведення всіх записів у книзі
+# Виведення всіх записів у книзі
+# for name, record in book.data.items():
+#     print(record)
+
+
+# # Збереження на диск
+# book.save_to_disk()
+
+# # Відновлення з диска
+# book.read_from_file()
+
 # for name, record in book.data.items():
 #     print(record)
