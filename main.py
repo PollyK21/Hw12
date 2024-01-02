@@ -1,6 +1,6 @@
 from collections import UserDict
 from datetime import date, datetime
-import pickle
+import csv
 
 
 class Field:
@@ -97,9 +97,12 @@ class Record:
 
 
 class AddressBook(UserDict):
-    def __init__(self, filename):
+    def __init__(self, csv_file=None):
         super().__init__()
-        self.filename = filename
+        self.csv_file = csv_file
+        self.records = []
+        if csv_file != None:
+            self.read_from_file()
 
     def add_record(self, record):
         self.data[record.name.value] = record
@@ -119,10 +122,10 @@ class AddressBook(UserDict):
                     results.append(str(record))
                     break
             # Пошук за днем народження
-            if record.birthday is not None:
-                birthday_str = str(record.birthday)
-                if query.lower() in birthday_str.lower():
-                    results.append(str(record))
+                if record.birthday is not None:
+                    birthday_str = str(record.birthday)
+                    if query.lower() in birthday_str.lower():
+                        results.append(str(record))
         return "\n".join(res for res in results)
 
     def delete(self, name):
@@ -142,39 +145,61 @@ class AddressBook(UserDict):
             page_number += 1
 
     def save_to_disk(self):
-        with open(self.filename, "wb") as fh:
-            pickle.dump(self, fh)
+        with open(self.csv_file, 'w', newline='') as file:
+            field = ["Name", "Phones", "Birthday"]
+            writer = csv.DictWriter(file, fieldnames=field)
+            writer.writeheader()
+            # Записуємо дані
+            for name, record in self.data.items():
+                phones_str = ";".join(str(phone) for phone in record.phones)
+                writer.writerow({
+                    "Name": name,
+                    "Phones": phones_str,
+                    "Birthday": str(record.birthday) if record.birthday else "None"
+                })
 
     def read_from_file(self):
-        with open(self.filename, "rb") as fh:
-            decoded = pickle.load(fh)
-            return decoded
+        try:
+            with open(self.csv_file, 'r') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    record = Record(row["Name"])
+                    phones = row["Phones"].split(";")
+                    for phone in phones:
+                        record.add_phone(phone)
+                    if row["Birthday"] != "None":
+                        record.set_birthday(row["Birthday"])
+                    self.add_record(record)
+        except FileNotFoundError:
+            print("File not found")
 
 
-# book = AddressBook("book1.bin")
+# csv_file = "book.csv"
+# book = AddressBook(csv_file)
 
 # # Створення запису для John
 # john_record = Record("John")
 # john_record.add_phone("1234567890")
-# try:
-#     john_record.add_phone("9876543210l")
-# except ValueError:
-#     print("помилка")
+# john_record.add_phone("0000000000")
+# # # try:
+# # #     john_record.add_phone("9876543210l")
+# # # except ValueError:
+# # #     print("помилка")
 # try:
 #     john_record.set_birthday("20.3.1997")
 # except ValueError:
 #     print("помилка")
 
 
-# # Додавання запису John до адресної книги
+# # # Додавання запису John до адресної книги
 # book.add_record(john_record)
 
-# Створення та додавання нового запису для Jane
+# # Створення та додавання нового запису для Jane
 # jane_record = Record("Jane")
 # jane_record.add_phone("9876543210")
 # book.add_record(jane_record)
 
-# john = book.search("1")
+# john = book.search("j")
 # print(john)
 
 # print(book)
@@ -208,7 +233,7 @@ class AddressBook(UserDict):
 #     print(record)
 
 
-# # Збереження на диск
+# Збереження на диск
 # book.save_to_disk()
 
 # # Відновлення з диска
@@ -216,3 +241,25 @@ class AddressBook(UserDict):
 
 # for name, record in book.data.items():
 #     print(record)
+
+# Створення та додавання нового запису для Jane
+# a = Record("a")
+# a.add_phone("9322222222")
+# book.add_record(a)
+    
+# # Створення та додавання нового запису для Jane
+# b = Record("b")
+# b.add_phone("7777777777")
+# book.add_record(b)
+
+# book.save_to_disk()
+
+# book.read_from_file()
+
+# for name, record in book.data.items():
+#     print(record)
+
+
+# john = book.find("John")
+# john.edit_phone("0000000000", "4444444444")
+# print(john)
