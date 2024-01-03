@@ -159,20 +159,186 @@ class AddressBook(UserDict):
                 })
 
     def read_from_file(self):
-        try:
-            with open(self.csv_file, 'r') as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    record = Record(row["Name"])
-                    phones = row["Phones"].split(";")
-                    for phone in phones:
-                        record.add_phone(phone)
-                    if row["Birthday"] != "None":
-                        record.set_birthday(row["Birthday"])
-                    self.add_record(record)
-        except FileNotFoundError:
-            print("File not found")
+        with open(self.csv_file, 'r') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                record = Record(row["Name"])
+                phones = row["Phones"].split(";")
+                for phone in phones:
+                    record.add_phone(phone)
+                if row["Birthday"] != "None":
+                    record.set_birthday(row["Birthday"])
+                self.add_record(record)
 
+
+def input_error(func):
+    def wrapper(*args):
+        try:
+            return func(*args)
+        except KeyError:
+            return "Contact not found."
+        except IndexError:
+            return "Contact"
+        except TypeError:
+            return "Invalid input. Please check your input."
+    return wrapper
+
+
+@input_error
+def handle_hello():
+    return "How can I help you?"
+
+
+@input_error
+def handle_add(name, phone):
+    if name not in ADDRESS_BOOK.data.keys():
+        record = Record(name)
+        try:
+            record.add_phone(phone)
+            ADDRESS_BOOK.add_record(record)
+            return f"Contact {name} added with phone number {phone}"
+        except ValueError:
+            return "Invalid phone"
+    else:
+        record = ADDRESS_BOOK.find(name)
+        try:
+            record.add_phone(phone)
+            return f"Phone number {phone} added for contact {name}"
+        except ValueError:
+            return "Invalid phone"
+
+
+@input_error
+def handle_change(name, old_phone, new_phone):
+    record = ADDRESS_BOOK.find(name)
+    if record is not None:
+        try:
+            record.edit_phone(old_phone, new_phone)
+            return f"Phone number for contact {name} changed to {new_phone}"
+        except ValueError:
+            return "Invalid phone"
+    else:
+        raise KeyError
+
+
+@input_error
+def handle_set_birthday(name, day):
+    record = ADDRESS_BOOK.find(name)
+    if record is not None:
+        try:
+            record.set_birthday(day)
+            return f"Birthday for contact {name} is set to {day}"
+        except ValueError:
+            return "Please enter the date in DD.MM.YYYY format."
+    else:
+        raise KeyError
+
+
+@input_error
+def days_to_birthday(name):
+    record = ADDRESS_BOOK.find(name)
+    if record is not None:
+        return record.days_to_birthday()
+    else:
+        raise KeyError
+
+
+@input_error
+def handle_delete(name):
+    record = ADDRESS_BOOK.find(name)
+    if record is not None:
+        ADDRESS_BOOK.delete(name)
+        return f"{name} deleted"
+    else:
+        raise KeyError
+
+
+@input_error
+def handle_phone(name):
+    record = ADDRESS_BOOK.find(name)
+    if record is not None:
+        return record
+    else:
+        raise KeyError
+
+
+@input_error
+def handle_show_all():
+    if len(ADDRESS_BOOK.data) == 0:
+        raise KeyError
+    else:
+        all = []
+        for record in ADDRESS_BOOK.data.values():
+            all.append(str(record))
+        return "\n".join(res for res in all)
+
+
+@input_error
+def handle_search(query):
+    return ADDRESS_BOOK.search(query)
+
+
+@input_error
+def handle_open(csv_file):
+    global ADDRESS_BOOK
+    try:
+        ADDRESS_BOOK = AddressBook(csv_file)
+        return f"Address book opened from {csv_file}"
+    except FileNotFoundError:
+        ADDRESS_BOOK = AddressBook(None)
+        return "File not found. Starting with an empty address book."
+
+
+@input_error
+def handle_save():
+    global ADDRESS_BOOK
+    if ADDRESS_BOOK.csv_file is None:
+        # Якщо ADDRESS_BOOK створено без файлу, тобто AddressBook(None), то зберегти в новий файл
+        ADDRESS_BOOK.csv_file = "new_book.csv"
+        ADDRESS_BOOK.save_to_disk()
+        return f"Address book saved to new_book.csv"
+    else:
+        # Якщо ADDRESS_BOOK має вказаний файл, то перезаписати його
+        ADDRESS_BOOK.save_to_disk()
+        return f"Address book saved to {ADDRESS_BOOK.csv_file}"
+
+
+COMMANDS = {
+    "hello": handle_hello,
+    "open": handle_open,
+    "save": handle_save,
+    "add": handle_add,
+    "change": handle_change,
+    "phone": handle_phone,
+    "show all": handle_show_all,
+    "set birthday": handle_set_birthday,
+    "days to birthday": days_to_birthday,
+    "delete": handle_delete,
+    "search": handle_search
+}
+
+
+@input_error
+def main():
+    global ADDRESS_BOOK
+    ADDRESS_BOOK = AddressBook(None)
+    while True:
+        user_input = input("Enter a command: ").lower()
+        if user_input in ["good bye", "close", "exit"]:
+            print(handle_save())
+            print("Good bye!")
+            break
+        for command in COMMANDS.keys():
+            if user_input.startswith(command):
+                args = user_input[len(command):].split()
+                print(COMMANDS[command](*args))
+                break
+        else:
+            print("Unknown command. Please try again.")
+
+
+if __name__ == "__main__":
+    main()
 
 # csv_file = "book.csv"
 # book = AddressBook(csv_file)
@@ -208,6 +374,7 @@ class AddressBook(UserDict):
 # john = book.find("John")
 # print(john)
 # john.edit_phone("1234567890", "1112223333")
+    
 # days = john.days_to_birthday()
 # print(days)
 
