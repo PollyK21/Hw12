@@ -101,7 +101,7 @@ class AddressBook(UserDict):
         super().__init__()
         self.csv_file = csv_file
         self.records = []
-        if csv_file != None:
+        if csv_file is not None:
             self.read_from_file()
 
     def add_record(self, record):
@@ -278,15 +278,22 @@ def handle_search(query):
     return ADDRESS_BOOK.search(query)
 
 
+DEFAULT_FILE = "new_book.csv"
+
+
 @input_error
-def handle_open(csv_file):
-    global ADDRESS_BOOK
+def handle_open(csv_file=None):
+    global ADDRESS_BOOK, DEFAULT_FILE
+    if csv_file is None:
+        # Якщо файл не вказаний, відкриваємо файл за замовченням
+        csv_file = DEFAULT_FILE
     try:
         ADDRESS_BOOK = AddressBook(csv_file)
+        DEFAULT_FILE = csv_file
         return f"Address book opened from {csv_file}"
     except FileNotFoundError:
-        ADDRESS_BOOK = AddressBook(None)
-        return "File not found. Starting with an empty address book."
+        ADDRESS_BOOK = AddressBook(DEFAULT_FILE)
+        return f"File not found. Starting with {DEFAULT_FILE}."
 
 
 @input_error
@@ -294,22 +301,41 @@ def handle_save():
     global ADDRESS_BOOK
     if ADDRESS_BOOK.csv_file is None:
         # Якщо ADDRESS_BOOK створено без файлу, тобто AddressBook(None), то зберегти в новий файл
-        ADDRESS_BOOK.csv_file = "new_book.csv"
+        ADDRESS_BOOK.csv_file = DEFAULT_FILE
         ADDRESS_BOOK.save_to_disk()
-        return f"Address book saved to new_book.csv"
+        return f"Address book saved to {DEFAULT_FILE}"
     else:
         # Якщо ADDRESS_BOOK має вказаний файл, то перезаписати його
         ADDRESS_BOOK.save_to_disk()
         return f"Address book saved to {ADDRESS_BOOK.csv_file}"
 
 
+def show_help():
+    help_message = """
+        Доступні команди:
+        hello: Вивести вітальне повідомлення.
+        open [ім'я_файлу]: Відкрити адресну книгу з вказаного файлу або останнього відкритого файлу.
+        save: Зберегти поточну адресну книгу.
+        add [іʼмя] [телефон]: Додати новий контакт до адресної книги.
+        change [іʼмя] [старий телефон] [новий телефон]: Змінити дані існуючого контакту.
+        info [іʼмя]: Вивести інформацію про контакт.
+        show all: Відобразити всі контакти в адресній книзі.
+        set birthday [іʼмя] [дата]: Встановити день народження для контакту.
+        days to birthday [іʼмя]: Розрахувати кількість днів до наступного дня народження для контакту.
+        delete [іʼмя]: Видалити контакт з адресної книги.
+        search [запит]: Пошук в адресній книзі за символами.
+        """
+    return help_message
+
+
 COMMANDS = {
+    "help": show_help,
     "hello": handle_hello,
     "open": handle_open,
     "save": handle_save,
     "add": handle_add,
     "change": handle_change,
-    "phone": handle_phone,
+    "info": handle_phone,
     "show all": handle_show_all,
     "set birthday": handle_set_birthday,
     "days to birthday": days_to_birthday,
@@ -321,7 +347,7 @@ COMMANDS = {
 @input_error
 def main():
     global ADDRESS_BOOK
-    ADDRESS_BOOK = AddressBook(None)
+    handle_open()
     while True:
         user_input = input("Enter a command: ").lower()
         if user_input in ["good bye", "close", "exit"]:
