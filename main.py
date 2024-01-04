@@ -301,17 +301,24 @@ def handle_open(csv_file=None):
 
 
 @input_error
-def handle_save():
-    global ADDRESS_BOOK
-    if ADDRESS_BOOK.csv_file is None:
-        # Якщо ADDRESS_BOOK створено без файлу, тобто AddressBook(None), то зберегти в новий файл
-        ADDRESS_BOOK.csv_file = DEFAULT_FILE
-        ADDRESS_BOOK.save_to_disk()
-        return f"Address book saved to {DEFAULT_FILE}"
+def handle_save(csv_file=None):
+    global ADDRESS_BOOK, DEFAULT_FILE
+    if csv_file is None:
+        csv_file = DEFAULT_FILE
+        if ADDRESS_BOOK.csv_file is None:
+            # Якщо ADDRESS_BOOK створено без файлу, тобто AddressBook(None), то зберегти за замовченням
+            ADDRESS_BOOK.csv_file = csv_file
+            ADDRESS_BOOK.save_to_disk()
+            return f"Address book saved to {DEFAULT_FILE}"
+        else:
+            # Якщо ADDRESS_BOOK має вказаний файл, то перезаписати його
+            ADDRESS_BOOK.save_to_disk()
+            return f"Address book saved to {ADDRESS_BOOK.csv_file}"
     else:
-        # Якщо ADDRESS_BOOK має вказаний файл, то перезаписати його
+        ADDRESS_BOOK.csv_file = csv_file
         ADDRESS_BOOK.save_to_disk()
         return f"Address book saved to {ADDRESS_BOOK.csv_file}"
+
 
 
 def show_help():
@@ -319,7 +326,7 @@ def show_help():
         Доступні команди:
         hello: Вивести вітальне повідомлення.
         open [ім'я_файлу]: Відкрити адресну книгу з вказаного файлу або останнього відкритого файлу.
-        save: Зберегти поточну адресну книгу.
+        save [ім'я_файлу*]: Зберегти поточну адресну книгу *без вказівки файлу збереже в поточний.
         add [іʼмя] [телефон]: Додати новий контакт до адресної книги.
         change [іʼмя] [старий телефон] [новий телефон]: Змінити дані існуючого контакту.
         info [іʼмя]: Вивести інформацію про контакт.
