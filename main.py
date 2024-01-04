@@ -292,8 +292,12 @@ def handle_open(csv_file=None):
         DEFAULT_FILE = csv_file
         return f"Address book opened from {csv_file}"
     except FileNotFoundError:
-        ADDRESS_BOOK = AddressBook(None)
-        return "File not found."
+        try:
+            ADDRESS_BOOK = AddressBook(DEFAULT_FILE)
+            return f"File not found. Address book opened from {DEFAULT_FILE}"
+        except FileNotFoundError:
+            ADDRESS_BOOK = AddressBook(None)
+            return "Starting with an empty address book."
 
 
 @input_error
